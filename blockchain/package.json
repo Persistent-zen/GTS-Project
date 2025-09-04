@@ -1,0 +1,7 @@
+{
+  "name": "gts-blockchain",
+  "version": "1.0.0",
+  "devDependencies": {
+    "hardhat": "^2.20.0"
+  }
+}

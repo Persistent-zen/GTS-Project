@@ -1,0 +1,25 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "formulahendry.code-runner",
+    "ms-vscode.vscode-typescript-next",
+    "dsznajder.es7-react-js-snippets",
+    "bradlc.vscode-tailwindcss",
+    "mhutchie.git-graph",
+    "rangav.vscode-thunder-client",
+    "humao.rest-client",
+    "ms-python.python",
+    "juanblanco.solidity",
+    "NomicFoundation.hardhat-vscode",
+    "tintinweb.solidity-visual-auditor",
+    "cweijan.vscode-database-client2",
+    "ms-azuretools.vscode-docker",
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-containers",
+    "ms-vscode.remote-explorer",
+    "streetsidesoftware.code-spell-checker",
+    "yzhang.markdown-all-in-one",
+    "redhat.vscode-yaml"
+  ]
+}
