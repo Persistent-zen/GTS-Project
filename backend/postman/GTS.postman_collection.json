@@ -1,0 +1,51 @@
+{
+  "info": {
+    "name": "GTS Backend APIs",
+    "_postman_id": "b7f1a5b6-12b4-4f45-b678-1e92c3e1a6a9",
+    "description": "Collection for testing GTS backend endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Score",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"userId\": \"12345\",\n    \"dr\": 10,\n    \"cf\": 20,\n    \"pi\": 30,\n    \"dh\": 40,\n    \"iv\": 50\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/scores",
+          "host": ["{{baseUrl}}"],
+          "path": ["scores"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Scores by User",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/scores/12345",
+          "host": ["{{baseUrl}}"],
+          "path": ["scores", "12345"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    }
+  ]
+}

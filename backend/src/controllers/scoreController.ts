@@ -1,44 +1,45 @@
-import { Request, Response } from "express";
-import * as scoreService from "../services/scoreService";
+import { Response } from "express";
+import { createScoreService, getScoresByUser } from "../services/scoreService";
+import { calculateGTS } from "../utils/calculateGTS";
+import { scoreSchema } from "../validators/scoreValidator";
+import { successResponse, errorResponse } from "../utils/responseHandler";
+import { AuthenticatedRequest } from "../middleware/authMiddleware";
 
-export const getAllScores = async (req: Request, res: Response) => {
+export const createScore = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { userId } = req.params;
-    const scores = await scoreService.getScoresByUser(userId);
-    res.json(scores);
+    if (!req.user) {
+      return res.status(401).json(errorResponse("Unauthorized", 401));
+    }
+
+    // Force the userId to be the authenticated user's ID
+    const parsed = scoreSchema.parse({ ...req.body, userId: req.user.userId });
+
+    const gts = calculateGTS(parsed.dr, parsed.cf, parsed.pi, parsed.dh, parsed.iv);
+    const score = await createScoreService({ ...parsed, gts });
+
+    return res.status(201).json(successResponse(score, "Score created successfully"));
   } catch (err: any) {
-    console.error("Error fetching scores:", err);
-    res.status(500).json({ error: "Failed to fetch scores", details: err.message });
+    console.error(err);
+    if (err.name === "ZodError") {
+      return res.status(400).json(errorResponse("Validation failed", 400, err.errors));
+    }
+    return res.status(500).json(errorResponse(err.message || "Failed to create score"));
   }
 };
 
-export const createScore = async (req: Request, res: Response) => {
+export const getAllScores = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log("Incoming score:", req.body);
+    const userId = req.params.userId;
+    if (!userId) return res.status(400).json(errorResponse("userId is required", 400));
 
-    const { userId, dr, cf, pi, dh, iv } = req.body;
-
-    if (!userId || [dr, cf, pi, dh, iv].some((v) => v === undefined)) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!req.user || req.user.userId !== userId) {
+      return res.status(403).json(errorResponse("Forbidden: You can only view your own scores", 403));
     }
 
-    // Compute GTS automatically
-    const gts = Math.round(0.4 * dr + 0.3 * cf + 0.15 * pi + 0.1 * dh + 0.05 * iv);
-
-    const newScore = await scoreService.createScore({
-      userId,
-      dr,
-      cf,
-      pi,
-      dh,
-      iv,
-      gts,
-    });
-
-    res.status(201).json(newScore);
+    const scores = await getScoresByUser(userId);
+    return res.status(200).json(successResponse(scores, "Scores fetched successfully"));
   } catch (err: any) {
-    console.error("Error creating score:", err.message);
     console.error(err);
-    res.status(500).json({ error: "Failed to create score", details: err.message });
+    return res.status(500).json(errorResponse(err.message || "Failed to fetch scores"));
   }
 };

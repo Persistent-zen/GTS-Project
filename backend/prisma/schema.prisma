@@ -1,15 +1,29 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String?
+  isVerified   Boolean  @default(false)
+  scores       Score[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
 }
 
 model Score {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   dr        Int
   cf        Int
   pi        Int
@@ -17,4 +31,6 @@ model Score {
   iv        Int
   gts       Int
   createdAt DateTime @default(now())
+
+  @@map("scores")
 }

@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTS Dashboard - Global Trust Score</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-glow: radial-gradient(circle at top, #1e1b4b 0%, #090d16 90%);
+            --card-bg: rgba(15, 23, 42, 0.65);
+            --card-border: rgba(99, 102, 241, 0.15);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Trust levels colors */
+            --color-excellent: #10b981;
+            --color-good: #3b82f6;
+            --color-fair: #f59e0b;
+            --color-poor: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+        }
+
+        body {
+            background: var(--bg-glow);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            position: relative;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 25px;
+        }
+
+        /* Navigation Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 15px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .verification-status {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .verified {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-excellent);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .unverified {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--color-fair);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: none;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input[type="email"],
+        input[type="text"],
+        input[type="password"] {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-size: 15px;
+            outline: none;
+        }
+
+        input[type="email"]:focus,
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        /* Custom Sliders for Scores */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 18px;
+        }
+
+        .slider-label {
+            width: 140px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slider-label span:first-child {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-main);
+        }
+
+        .slider-label span:last-child {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            accent-color: var(--primary);
+            height: 6px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .slider-val {
+            width: 45px;
+            text-align: right;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        /* Auth Screen Card Layout */
+        .auth-container {
+            max-width: 400px;
+            margin: 60px auto 0 auto;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding-bottom: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            position: relative;
+        }
+
+        .auth-tab.active {
+            color: var(--primary);
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
+        }
+
+        /* Main Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* GTS Circular Gauge Widget */
+        .gauge-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .gauge-outer {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(var(--gauge-color) 0%, rgba(255, 255, 255, 0.05) 0%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: background 1s ease-in-out;
+        }
+
+        .gauge-inner {
+            width: 126px;
+            height: 126px;
+            border-radius: 50%;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .gauge-val {
+            font-size: 40px;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--text-main);
+        }
+
+        .gauge-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .trust-badge {
+            margin-top: 20px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--gauge-color);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            letter-spacing: 0.5px;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 12px 16px;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+            color: var(--text-main);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .gts-cell {
+            font-weight: 700;
+            color: var(--cell-color);
+        }
+
+        /* Toasts / Notifications */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.9);
+            border-left: 4px solid var(--primary);
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 999;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--color-excellent); }
+        .toast.error { border-color: var(--color-poor); }
+
+        /* Hidden Class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Utilities */
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Loader */
+        .loader {
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Charts Canvas Size */
+        .chart-box {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+
+        .settings-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Header -->
+        <header>
+            <div class="logo">Global Trust Score (GTS)</div>
+            <div id="authBadge" class="user-badge hidden">
+                <span class="verification-status" id="userVerificationBadge">Unverified</span>
+                <button id="btnVerify" class="btn btn-outline btn-sm" onclick="verifyAccount()">Verify</button>
+                <span class="user-name" id="userDisplayName">User</span>
+                <button id="btnSettingsToggle" class="btn btn-outline btn-sm" onclick="toggleSettings()">Profile</button>
+                <button class="btn btn-outline btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Auth Panels (Login / Register) -->
+        <div id="authPanel" class="glass-card auth-container">
+            <div class="auth-tabs">
+                <div id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</div>
+                <div id="tabRegister" class="auth-tab" onclick="switchAuthTab('register')">Sign Up</div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" required placeholder="name@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">
+                    <span>Sign In</span>
+                    <div id="loginLoader" class="loader hidden"></div>
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label for="regName">Name</label>
+                    <input type="text" id="regName" required placeholder="Alice Smith">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" required placeholder="name@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password (min. 6 characters)</label>
+                    <input type="password" id="regPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">
+                    <span>Sign Up</span>
+                    <div id="registerLoader" class="loader hidden"></div>
+                </button>
+            </form>
+        </div>
+
+        <!-- Profile Settings View -->
+        <div id="settingsPanel" class="glass-card settings-container hidden">
+            <h3 class="section-title">Profile Settings</h3>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="profileName">Name</label>
+                    <input type="text" id="profileName" required>
+                </div>
+                <div class="form-group">
+                    <label for="profileEmail">Email Address</label>
+                    <input type="email" id="profileEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="profilePassword">New Password (leave blank to keep current)</label>
+                    <input type="password" id="profilePassword" placeholder="••••••••">
+                </div>
+                
+                <div style="display: flex; gap: 15px; margin-top: 15px;">
+                    <button type="button" class="btn btn-outline" style="flex: 1;" onclick="toggleSettings()">Cancel</button>
+                    <button type="submit" class="btn" style="flex: 1;">
+                        <span>Save Changes</span>
+                        <div id="profileLoader" class="loader hidden"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Dashboard Layout -->
+        <div id="dashboardPanel" class="dashboard-grid hidden">
+            
+            <!-- Rating Gauge Card -->
+            <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h3 class="section-title" style="align-self: flex-start; width: 100%;">GTS Rating Gauge</h3>
+                <div class="gauge-wrapper">
+                    <div class="gauge-outer" id="gtsGauge">
+                        <div class="gauge-inner">
+                            <span class="gauge-val" id="gtsScoreDisplay">-</span>
+                            <span class="gauge-title">GTS</span>
+                        </div>
+                    </div>
+                    <div class="trust-badge" id="trustLevelBadge">No Data</div>
+                </div>
+            </div>
+
+            <!-- Radar Breakdown Chart Card -->
+            <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h3 class="section-title" style="align-self: flex-start; width: 100%;">Component Metrics Radar</h3>
+                <div class="chart-box">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Add Score Form -->
+            <div class="glass-card">
+                <h3 class="section-title">Calculate New GTS</h3>
+                <form id="scoreForm">
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Domain Reputation (DR)</span>
+                            <span>Weight: 40%</span>
+                        </div>
+                        <input type="range" id="dr" min="0" max="100" value="50" oninput="updateSliderVal('dr')">
+                        <span class="slider-val" id="drVal">50</span>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Colleague Feedback (CF)</span>
+                            <span>Weight: 30%</span>
+                        </div>
+                        <input type="range" id="cf" min="0" max="100" value="50" oninput="updateSliderVal('cf')">
+                        <span class="slider-val" id="cfVal">50</span>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Public Influence (PI)</span>
+                            <span>Weight: 15%</span>
+                        </div>
+                        <input type="range" id="pi" min="0" max="100" value="50" oninput="updateSliderVal('pi')">
+                        <span class="slider-val" id="piVal">50</span>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Domain History (DH)</span>
+                            <span>Weight: 10%</span>
+                        </div>
+                        <input type="range" id="dh" min="0" max="100" value="50" oninput="updateSliderVal('dh')">
+                        <span class="slider-val" id="dhVal">50</span>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Identity Verification (IV)</span>
+                            <span>Weight: 5%</span>
+                        </div>
+                        <input type="range" id="iv" min="0" max="100" value="50" oninput="updateSliderVal('iv')">
+                        <span class="slider-val" id="ivVal">50</span>
+                    </div>
+
+                    <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">
+                        <span>Publish Score to DB</span>
+                        <div id="submitLoader" class="loader hidden"></div>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Historical Line Chart Card -->
+            <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h3 class="section-title" style="align-self: flex-start; width: 100%;">Historical Trust Trend</h3>
+                <div class="chart-box">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Full Width: Score History Table -->
+            <div class="glass-card" style="grid-column: 1 / -1; margin-bottom: 0;">
+                <div class="flex-between">
+                    <h3 class="section-title" style="margin-bottom: 0;">Historical Score Submissions</h3>
+                    <button class="btn btn-outline btn-sm" onclick="loadScores()">
+                        <span>Sync Now</span>
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="scoresTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>DR (40%)</th>
+                                <th>CF (30%)</th>
+                                <th>PI (15%)</th>
+                                <th>DH (10%)</th>
+                                <th>IV (5%)</th>
+                                <th>Final GTS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Loaded scores will go here -->
+                        </tbody>
+                    </table>
+                    <div id="noScoresMsg" style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 14px;">
+                        No scores recorded yet. Move the sliders and click "Publish Score" to generate your first score!
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:5000/api";
+        
+        let token = localStorage.getItem("gts_token");
+        let user = JSON.parse(localStorage.getItem("gts_user"));
+        let viewMode = "dashboard"; // "dashboard" or "settings"
+
+        // Chart.js references
+        let radarChart = null;
+        let lineChart = null;
+
+        // Initialize App
+        window.addEventListener("DOMContentLoaded", () => {
+            checkAuth();
+        });
+
+        function checkAuth() {
+            if (token && user) {
+                // Show dashboard, hide login
+                document.getElementById("authPanel").classList.add("hidden");
+                document.getElementById("authBadge").classList.remove("hidden");
+                document.getElementById("userDisplayName").innerText = user.name;
+                
+                // Set verification badge state
+                const vBadge = document.getElementById("userVerificationBadge");
+                const vBtn = document.getElementById("btnVerify");
+                if (user.isVerified) {
+                    vBadge.className = "verification-status verified";
+                    vBadge.innerText = "Verified";
+                    vBtn.classList.add("hidden");
+                } else {
+                    vBadge.className = "verification-status unverified";
+                    vBadge.innerText = "Unverified";
+                    vBtn.classList.remove("hidden");
+                }
+
+                // Render views
+                if (viewMode === "settings") {
+                    document.getElementById("dashboardPanel").classList.add("hidden");
+                    document.getElementById("settingsPanel").classList.remove("hidden");
+                    
+                    // Prepopulate profile settings
+                    document.getElementById("profileName").value = user.name;
+                    document.getElementById("profileEmail").value = user.email;
+                    document.getElementById("profilePassword").value = "";
+                } else {
+                    document.getElementById("dashboardPanel").classList.remove("hidden");
+                    document.getElementById("settingsPanel").classList.add("hidden");
+                    loadScores();
+                }
+            } else {
+                // Show login, hide dashboard
+                document.getElementById("authPanel").classList.remove("hidden");
+                document.getElementById("authBadge").classList.add("hidden");
+                document.getElementById("dashboardPanel").classList.add("hidden");
+                document.getElementById("settingsPanel").classList.add("hidden");
+            }
+        }
+
+        // Toggle Profile settings panel
+        function toggleSettings() {
+            if (viewMode === "dashboard") {
+                viewMode = "settings";
+                document.getElementById("btnSettingsToggle").innerText = "Dashboard";
+            } else {
+                viewMode = "dashboard";
+                document.getElementById("btnSettingsToggle").innerText = "Profile";
+            }
+            checkAuth();
+        }
+
+        // Switch login/register tab
+        function switchAuthTab(tab) {
+            const tabLogin = document.getElementById("tabLogin");
+            const tabRegister = document.getElementById("tabRegister");
+            const loginForm = document.getElementById("loginForm");
+            const registerForm = document.getElementById("registerForm");
+
+            if (tab === "login") {
+                tabLogin.classList.add("active");
+                tabRegister.classList.remove("active");
+                loginForm.classList.remove("hidden");
+                registerForm.classList.add("hidden");
+            } else {
+                tabLogin.classList.remove("active");
+                tabRegister.classList.add("active");
+                loginForm.classList.add("hidden");
+                registerForm.classList.remove("hidden");
+            }
+        }
+
+        // Update slider display output
+        function updateSliderVal(id) {
+            const input = document.getElementById(id);
+            const valSpan = document.getElementById(id + "Val");
+            valSpan.innerText = input.value;
+        }
+
+        // Show custom notifications
+        function showToast(message, type = "success") {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toastMsg");
+
+            toastMsg.innerText = message;
+            toast.className = `toast show ${type}`;
+
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3500);
+        }
+
+        // Login Handler
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("loginEmail").value;
+            const password = document.getElementById("loginPassword").value;
+            const loader = document.getElementById("loginLoader");
+
+            loader.classList.remove("hidden");
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || "Authentication failed");
+                }
+
+                token = result.data.token;
+                user = result.data.user;
+
+                localStorage.setItem("gts_token", token);
+                localStorage.setItem("gts_user", JSON.stringify(user));
+
+                showToast("Welcome back, " + user.name + "!", "success");
+                checkAuth();
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                loader.classList.add("hidden");
+            }
+        });
+
+        // Register Handler
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("regName").value;
+            const email = document.getElementById("regEmail").value;
+            const password = document.getElementById("regPassword").value;
+            const loader = document.getElementById("registerLoader");
+
+            loader.classList.remove("hidden");
+
+            try {
+                const res = await fetch(`${API_BASE}/users`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || "Failed to register user");
+                }
+
+                showToast("Registration successful! Please login.", "success");
+                switchAuthTab("login");
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                loader.classList.add("hidden");
+            }
+        });
+
+        // Edit Profile settings handler
+        document.getElementById("profileForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!token || !user) return;
+
+            const loader = document.getElementById("profileLoader");
+            loader.classList.remove("hidden");
+
+            const name = document.getElementById("profileName").value;
+            const email = document.getElementById("profileEmail").value;
+            const password = document.getElementById("profilePassword").value;
+
+            const updateData = { name, email };
+            if (password.trim() !== "") {
+                updateData.password = password;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/users/${user.id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || "Profile update failed");
+                }
+
+                // Update local storage user details
+                user = result.data;
+                localStorage.setItem("gts_user", JSON.stringify(user));
+
+                showToast("Profile details updated successfully!");
+                toggleSettings(); // go back to dashboard
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                loader.classList.add("hidden");
+            }
+        });
+
+        // Verification call
+        async function verifyAccount() {
+            if (!token || !user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/users/${user.id}/verify`, {
+                    method: "PATCH",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || "Verification failed");
+                }
+
+                user = result.data;
+                localStorage.setItem("gts_user", JSON.stringify(user));
+                showToast("Account verified successfully!", "success");
+                checkAuth();
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        }
+
+        // Logout
+        function logout() {
+            token = null;
+            user = null;
+            viewMode = "dashboard";
+            localStorage.removeItem("gts_token");
+            localStorage.removeItem("gts_user");
+            
+            // Clean up charts
+            if (radarChart) { radarChart.destroy(); radarChart = null; }
+            if (lineChart) { lineChart.destroy(); lineChart = null; }
+            
+            showToast("Successfully logged out.");
+            checkAuth();
+        }
+
+        // Fetch user scores and refresh dashboard
+        async function loadScores() {
+            if (!user || !token) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/score/${user.id}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || "Failed to load scores");
+                }
+
+                const scores = result.data;
+                const tbody = document.querySelector("#scoresTable tbody");
+                tbody.innerHTML = "";
+
+                if (scores.length === 0) {
+                    document.getElementById("noScoresMsg").classList.remove("hidden");
+                    updateGauge(0);
+                    renderRadarChart(null);
+                    renderLineChart([]);
+                    return;
+                }
+
+                document.getElementById("noScoresMsg").classList.add("hidden");
+
+                // Render scores to table
+                scores.forEach(score => {
+                    const cellColor = getTrustColor(score.gts);
+                    const row = `<tr>
+                        <td>${new Date(score.createdAt).toLocaleString()}</td>
+                        <td>${score.dr}</td>
+                        <td>${score.cf}</td>
+                        <td>${score.pi}</td>
+                        <td>${score.dh}</td>
+                        <td>${score.iv}</td>
+                        <td class="gts-cell" style="--cell-color: ${cellColor}">${score.gts}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                // Update circular gauge with latest score
+                const latest = scores[0];
+                updateGauge(latest.gts);
+
+                // Render Visualizations
+                renderRadarChart(latest);
+                renderLineChart(scores);
+
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        }
+
+        // Submit new Score
+        document.getElementById("scoreForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!token) return;
+
+            const loader = document.getElementById("submitLoader");
+            loader.classList.remove("hidden");
+
+            const data = {
+                dr: parseInt(document.getElementById("dr").value),
+                cf: parseInt(document.getElementById("cf").value),
+                pi: parseInt(document.getElementById("pi").value),
+                dh: parseInt(document.getElementById("dh").value),
+                iv: parseInt(document.getElementById("iv").value),
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/score`, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}` 
+                    },
+                    body: JSON.stringify(data),
+                });
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || "Failed to publish score");
+                }
+
+                showToast("Score successfully published!");
+                loadScores();
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                loader.classList.add("hidden");
+            }
+        });
+
+        // Helper calculations for Trust Levels and UI color
+        function getTrustColor(score) {
+            if (score >= 80) return "var(--color-excellent)";
+            if (score >= 60) return "var(--color-good)";
+            if (score >= 40) return "var(--color-fair)";
+            return "var(--color-poor)";
+        }
+
+        function getTrustLevelText(score) {
+            if (score >= 80) return "Excellent Trust Level";
+            if (score >= 60) return "Good Trust Level";
+            if (score >= 40) return "Fair Trust Level";
+            if (score > 0) return "Low Trust Level";
+            return "No Score Calculated";
+        }
+
+        // Circular Gauge Render
+        function updateGauge(score) {
+            const gauge = document.getElementById("gtsGauge");
+            const scoreDisp = document.getElementById("gtsScoreDisplay");
+            const badge = document.getElementById("trustLevelBadge");
+
+            if (score === 0) {
+                scoreDisp.innerText = "-";
+                badge.innerText = "No Data";
+                gauge.style.background = `rgba(255, 255, 255, 0.05)`;
+                return;
+            }
+
+            const gaugeColor = getTrustColor(score);
+            const levelText = getTrustLevelText(score);
+
+            scoreDisp.innerText = score;
+            badge.innerText = levelText;
+            badge.style.color = gaugeColor;
+            
+            // Set custom property for CSS rendering
+            document.documentElement.style.setProperty('--gauge-color', gaugeColor);
+            
+            // Render conic gradient progress
+            const percentage = score;
+            gauge.style.background = `conic-gradient(${gaugeColor} ${percentage}%, rgba(255, 255, 255, 0.05) ${percentage}%)`;
+        }
+
+        // Render Radar Chart for a single score (the latest one)
+        function renderRadarChart(score) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            if (radarChart) {
+                radarChart.destroy();
+            }
+
+            if (!score) {
+                return;
+            }
+
+            const data = {
+                labels: ['Reputation (DR)', 'Feedback (CF)', 'Influence (PI)', 'History (DH)', 'Identity (IV)'],
+                datasets: [{
+                    label: 'Score Value',
+                    data: [score.dr, score.cf, score.pi, score.dh, score.iv],
+                    fill: true,
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: '#6366f1',
+                    pointBackgroundColor: '#8b5cf6',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#6366f1'
+                }]
+            };
+
+            const config = {
+                type: 'radar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            pointLabels: { color: '#94a3b8', font: { size: 10 } },
+                            ticks: { display: false },
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            };
+
+            radarChart = new Chart(ctx, config);
+        }
+
+        // Render Line Chart showing score history over time
+        function renderLineChart(scores) {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            
+            if (lineChart) {
+                lineChart.destroy();
+            }
+
+            if (scores.length === 0) {
+                return;
+            }
+
+            // Show timeline chronologically (scores is sorted desc, so we reverse it)
+            const chronological = [...scores].reverse();
+            const labels = chronological.map(s => new Date(s.createdAt).toLocaleDateString());
+            const dataPoints = chronological.map(s => s.gts);
+
+            const data = {
+                labels: labels,
+                datasets: [{
+                    label: 'Global Trust Score',
+                    data: dataPoints,
+                    fill: false,
+                    borderColor: '#10b981',
+                    tension: 0.15,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#10b981',
+                    pointRadius: 4
+                }]
+            };
+
+            const config = {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { size: 10 } }
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8', font: { size: 10 } }
+                        }
+                    }
+                }
+            };
+
+            lineChart = new Chart(ctx, config);
+        }
+    </script>
+</body>
+</html>

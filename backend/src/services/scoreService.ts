@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const createScore = async (data: {
+export const createScoreService = async (data: {
   userId: string;
   dr: number;
   cf: number;
@@ -11,26 +11,12 @@ export const createScore = async (data: {
   iv: number;
   gts: number;
 }) => {
-  try {
-    const newScore = await prisma.score.create({
-      data,
-    });
-    return newScore;
-  } catch (err) {
-    console.error("Prisma createScore error:", err);
-    throw err;
-  }
+  return await prisma.score.create({ data });
 };
 
 export const getScoresByUser = async (userId: string) => {
-  try {
-    const scores = await prisma.score.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    });
-    return scores;
-  } catch (err) {
-    console.error("Prisma getScoresByUser error:", err);
-    throw err;
-  }
+  return await prisma.score.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
 };
